@@ -54,37 +54,47 @@ class ServiceView(FlaskView):
                 default_logo_path = self.default_logo_url()
                 for file in m3u_parser.files:
                     if stream_type == constants.StreamType.PROXY:
-                        stream = server.make_proxy_stream()
+                        stream_object = server.make_proxy_stream()
+                        stream = stream_object.stream()
                     elif stream_type == constants.StreamType.VOD_PROXY:
-                        stream = server.make_proxy_vod()
+                        stream_object = server.make_proxy_vod()
+                        stream = stream_object.stream()
                     elif stream_type == constants.StreamType.RELAY:
-                        stream = server.make_relay_stream()
-                        stream.output = [stream.generate_http_link(constants.HlsType.HLS_PULL,
-                                                                   oid=stream.output[0].id)]
+                        stream_object = server.make_relay_stream()
+                        stream = stream_object.stream()
+                        sid = stream.output[0].id
+                        stream.output = [stream.generate_http_link(constants.HlsType.HLS_PULL, oid=sid)]
                     elif stream_type == constants.StreamType.ENCODE:
-                        stream = server.make_encode_stream()
-                        stream.output = [stream.generate_http_link(constants.HlsType.HLS_PULL,
-                                                                   oid=stream.output[0].id)]
+                        stream_object = server.make_encode_stream()
+                        stream = stream_object.stream()
+                        sid = stream.output[0].id
+                        stream.output = [stream.generate_http_link(constants.HlsType.HLS_PULL, oid=sid)]
                     elif stream_type == constants.StreamType.VOD_RELAY:
-                        stream = server.make_vod_relay_stream()
-                        stream.output = [stream.generate_vod_link(constants.HlsType.HLS_PULL,
-                                                                  oid=stream.output[0].id)]
+                        stream_object = server.make_vod_relay_stream()
+                        stream = stream_object.stream()
+                        sid = stream.output[0].id
+                        stream.output = [stream.generate_vod_link(constants.HlsType.HLS_PULL, oid=sid)]
                     elif stream_type == constants.StreamType.VOD_ENCODE:
-                        stream = server.make_vod_encode_stream()
-                        stream.output = [stream.generate_vod_link(constants.HlsType.HLS_PULL,
-                                                                  oid=stream.output[0].id)]
+                        stream_object = server.make_vod_encode_stream()
+                        stream = stream_object.stream()
+                        sid = stream.output[0].id
+                        stream.output = [stream.generate_vod_link(constants.HlsType.HLS_PULL, oid=sid)]
                     elif stream_type == constants.StreamType.COD_RELAY:
-                        stream = server.make_cod_relay_stream()
-                        stream.output = [stream.generate_cod_link(constants.HlsType.HLS_PULL,
-                                                                  oid=stream.output[0].id)]
+                        stream_object = server.make_cod_relay_stream()
+                        stream = stream_object.stream()
+                        sid = stream.output[0].id
+                        stream.output = [stream.generate_cod_link(constants.HlsType.HLS_PULL, oid=sid)]
                     elif stream_type == constants.StreamType.COD_ENCODE:
-                        stream = server.make_cod_encode_stream()
-                        stream.output = [stream.generate_cod_link(constants.HlsType.HLS_PULL,
-                                                                  oid=stream.output[0].id)]
+                        stream_object = server.make_cod_encode_stream()
+                        stream = stream_object.stream()
+                        sid = stream.output[0].id
+                        stream.output = [stream.generate_cod_link(constants.HlsType.HLS_PULL, oid=sid)]
                     elif stream_type == constants.StreamType.CATCHUP:
-                        stream = server.make_catchup_stream()
+                        stream_object = server.make_catchup_stream()
+                        stream = stream_object.stream()
                     else:
-                        stream = server.make_test_life_stream()
+                        stream_object = server.make_test_life_stream()
+                        stream = stream_object.stream()
 
                     input_url = file['link']
                     if stream_type == constants.StreamType.PROXY or stream_type == constants.StreamType.VOD_PROXY:
