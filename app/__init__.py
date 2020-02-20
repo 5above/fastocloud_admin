@@ -42,32 +42,32 @@ def init_project(static_folder, *args):
     if not os.path.exists(epg_tmp_folder):
         os.mkdir(epg_tmp_folder)
 
-    app = Flask(__name__, static_folder=static_folder)
+    _app = Flask(__name__, static_folder=static_folder)
     for file in args:
-        app.config.from_pyfile(file, silent=False)
+        _app.config.from_pyfile(file, silent=False)
 
-    app.wsgi_app = ProxyFix(app.wsgi_app)
-    bootstrap = Bootstrap(app)
-    db = PyModm(app)
-    mail = Mail(app)
-    socketio = SocketIO(app)
-    login_manager = LoginManager(app)
+    _app.wsgi_app = ProxyFix(_app.wsgi_app)
+    Bootstrap(_app)
+    PyModm(_app)
+    _mail = Mail(_app)
+    _socketio = SocketIO(_app)
+    _login_manager = LoginManager(_app)
 
-    login_manager.login_view = 'HomeView:signin'
+    _login_manager.login_view = 'HomeView:signin'
 
     # socketio
-    @socketio.on('connect')
+    @_socketio.on('connect')
     def connect():
         pass
 
-    @socketio.on('disconnect')
+    @_socketio.on('disconnect')
     def disconnect():
         pass
 
     # defaults flask
     _host = '0.0.0.0'
     _port = 8080
-    server_name = app.config.get('SERVER_NAME_FOR_POST')
+    server_name = _app.config.get('SERVER_NAME_FOR_POST')
     sn_host, sn_port = None, None
 
     if server_name:
@@ -75,15 +75,15 @@ def init_project(static_folder, *args):
 
     host = sn_host or _host
     port = int(sn_port or _port)
-    servers_manager = ServiceManager(host, port, socketio)
+    _servers_manager = ServiceManager(host, port, _socketio)
 
-    omdb_api_key = app.config.get('OMDB_KEY')
-    omdb = OMDBClient(apikey=omdb_api_key)
+    omdb_api_key = _app.config.get('OMDB_KEY')
+    _omdb = OMDBClient(apikey=omdb_api_key)
 
-    return app, bootstrap, db, mail, login_manager, servers_manager, omdb
+    return _app, _mail, _login_manager, _servers_manager, _omdb
 
 
-app, bootstrap, db, mail, login_manager, servers_manager, omdb = init_project(
+app, mail, login_manager, servers_manager, omdb = init_project(
     'static',
     'config/public_config.py',
     'config/config.py',

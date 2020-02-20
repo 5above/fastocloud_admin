@@ -256,7 +256,6 @@ class Service(IStreamHandler):
         if stream_object:
             stream_object.stable()
 
-
     def remove_stream(self, sid: ObjectId):
         for stream in list(self._streams):
             if stream.id == sid:

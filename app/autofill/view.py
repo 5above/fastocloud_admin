@@ -79,8 +79,8 @@ class M3uParseStreamsView(FlaskView):
                 m3u_parser.load_content(data)
                 m3u_parser.parse()
 
-                for file in m3u_parser.files:
-                    title = file['title']
+                for entry in m3u_parser.files:
+                    title = entry['title']
                     if len(title) > constants.MAX_STREAM_NAME_LENGTH:
                         continue
 
@@ -88,15 +88,15 @@ class M3uParseStreamsView(FlaskView):
                     if not line:
                         line = M3uParseStreams(name=title)
 
-                    tvg_id = file['tvg-id']
+                    tvg_id = entry['tvg-id']
                     if len(tvg_id) and len(tvg_id) < constants.MAX_STREAM_TVG_ID_LENGTH:
                         line.tvg_id.append(tvg_id)
 
-                    tvg_group = file['tvg-group']
+                    tvg_group = entry['tvg-group']
                     if len(tvg_group) and len(tvg_group) < constants.MAX_STREAM_GROUP_TITLE_LENGTH:
                         line.group.append(tvg_group)
 
-                    tvg_logo = file['tvg-logo']
+                    tvg_logo = entry['tvg-logo']
                     if len(tvg_logo) and len(tvg_logo) < constants.MAX_URL_LENGTH:
                         if is_valid_http_url(tvg_logo, timeout=0.1):
                             line.tvg_logo.append(tvg_logo)
@@ -145,8 +145,8 @@ class M3uParseVodsView(FlaskView):
                 m3u_parser.load_content(data)
                 m3u_parser.parse()
 
-                for file in m3u_parser.files:
-                    title = file['title']
+                for entry in m3u_parser.files:
+                    title = entry['title']
                     if len(title) > constants.MAX_STREAM_NAME_LENGTH:
                         continue
 
@@ -154,11 +154,11 @@ class M3uParseVodsView(FlaskView):
                     if not line:
                         line = M3uParseVods(name=title)
 
-                    tvg_group = file['tvg-group']
+                    tvg_group = entry['tvg-group']
                     if len(tvg_group) and len(tvg_group) < constants.MAX_STREAM_GROUP_TITLE_LENGTH:
                         line.group.append(tvg_group)
 
-                    tvg_logo = file['tvg-logo']
+                    tvg_logo = entry['tvg-logo']
                     if len(tvg_logo) and len(tvg_logo) < constants.MAX_URL_LENGTH:
                         if is_valid_http_url(tvg_logo, timeout=0.1):
                             line.tvg_logo.append(tvg_logo)

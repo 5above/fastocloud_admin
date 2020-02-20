@@ -24,18 +24,18 @@ class ProviderView(FlaskView):
             tests = []
             for stream in streams:
                 front = stream.to_dict()
-                type = stream.type
-                if type == constants.StreamType.PROXY or type == constants.StreamType.VOD_PROXY:
+                stream_type = stream.type
+                if stream_type == constants.StreamType.PROXY or stream_type == constants.StreamType.VOD_PROXY:
                     proxy.append(front)
-                elif type == constants.StreamType.VOD_RELAY or type == constants.StreamType.VOD_ENCODE:
+                elif stream_type == constants.StreamType.VOD_RELAY or stream_type == constants.StreamType.VOD_ENCODE:
                     vods.append(front)
-                elif type == constants.StreamType.COD_RELAY or type == constants.StreamType.COD_ENCODE:
+                elif stream_type == constants.StreamType.COD_RELAY or stream_type == constants.StreamType.COD_ENCODE:
                     cods.append(front)
-                elif type == constants.StreamType.CATCHUP:
+                elif stream_type == constants.StreamType.CATCHUP:
                     catchups.append(front)
-                elif type == constants.StreamType.EVENT:
+                elif stream_type == constants.StreamType.EVENT:
                     events.append(front)
-                elif type == constants.StreamType.TEST_LIFE:
+                elif stream_type == constants.StreamType.TEST_LIFE:
                     tests.append(front)
                 else:
                     streams_relay_encoder_timeshifts.append(front)

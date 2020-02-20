@@ -9,7 +9,7 @@ from pyfastocloud_models.utils.utils import is_valid_email, get_country_code_by_
 from app import app, mail, login_manager
 from app.home.entry import ProviderAdminUser
 from app.home.forms import ContactForm
-from app.common.provider.forms import SignupForm, SigninForm
+from app.common.provider.forms import SignupForm, SignInForm
 from bson.objectid import ObjectId
 
 
@@ -22,9 +22,9 @@ def _get_provider_by_email(email: str):
         return provider
 
 
-def _get_provider_by_id(id: str):
+def _get_provider_by_id(sid: str):
     try:
-        provider = ProviderAdminUser.objects.get({'_id': ObjectId(id)})
+        provider = ProviderAdminUser.objects.get({'_id': ObjectId(sid)})
     except ProviderAdminUser.DoesNotExist:
         return None
     else:
@@ -46,7 +46,7 @@ def send_email(email: str, subject: str, message: str):
     mail.send(msg)
 
 
-def post_login(form: SigninForm):
+def post_login(form: SignInForm):
     if not form.validate_on_submit():
         flash_error(form.errors)
         return render_template('home/login.html', form=form)
@@ -130,7 +130,7 @@ class HomeView(FlaskView):
         if current_user.is_authenticated:
             return redirect(url_for('ProviderView:dashboard'))
 
-        form = SigninForm()
+        form = SignInForm()
         if request.method == 'POST':
             return post_login(form)
 
