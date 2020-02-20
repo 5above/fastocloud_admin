@@ -1,16 +1,17 @@
-from datetime import datetime
 from bson.objectid import ObjectId
 
-from pyfastocloud_models.stream.entry import IStream, ProxyStream, EncodeStream, RelayStream, TimeshiftRecorderStream, \
-    CatchupStream, TimeshiftPlayerStream, TestLifeStream, VodRelayStream, VodEncodeStream, ProxyVodStream, \
-    CodRelayStream, CodEncodeStream, EventStream
+from pyfastocloud_models.stream.entry import IStream
 from pyfastocloud.client_constants import ClientStatus
 
 from pyfastocloud_models.series.entry import Serial
 import pyfastocloud_models.constants as constants
-from pyfastocloud_models.service.entry import ServiceSettings, ProviderPair, safe_delete_stream
+from pyfastocloud_models.service.entry import ServiceSettings, ProviderPair
 from app.service.service_client import ServiceClient, OperationSystem
 from app.service.stream_handler import IStreamHandler
+from app.service.stream import IStreamObject, ProxyStreamObject, ProxyVodStreamObject, RelayStreamObject, \
+    VodRelayStreamObject, EncodeStreamObject, VodEncodeStreamObject, TimeshiftRecorderStreamObject, \
+    TimeshiftPlayerStreamObject, CatchupStreamObject, EventStreamObject, CodEncodeStreamObject, CodRelayStreamObject, \
+    TestLifeStreamObject
 
 
 class OnlineUsers(object):
@@ -73,12 +74,12 @@ class Service(IStreamHandler):
 
     def __init__(self, host, port, socketio, settings: ServiceSettings):
         self._settings = settings
-        self.__reload_from_db()
         # other fields
         self._client = ServiceClient(settings.id, settings.host.host, settings.host.port, self)
         self._host = host
         self._port = port
         self._socketio = socketio
+        self.__reload_from_db()
 
     def connect(self):
         return self._client.connect()
@@ -108,37 +109,36 @@ class Service(IStreamHandler):
         return self._client.activate(license_key)
 
     def sync(self, prepare=False):
-        settings = self._settings
         if prepare:
-            self._client.prepare_service(settings)
-        res = self._client.sync_service(settings)
+            self._client.prepare_service(self._settings)
+        res = self._client.sync_service(self._streams)
         # self.__refresh_catchups()
         return res
 
-    def get_log_stream(self, sid: str):
+    def get_log_stream(self, sid: ObjectId):
         stream = self.find_stream_by_id(sid)
         if stream:
-            self._client.get_log_stream(self._host, self._port, sid, stream.generate_feedback_dir())
+            stream.get_log_request(self._host, self._port)
 
-    def get_pipeline_stream(self, sid):
+    def get_pipeline_stream(self, sid: ObjectId):
         stream = self.find_stream_by_id(sid)
         if stream:
-            self._client.get_pipeline_stream(self._host, self._port, sid, stream.generate_feedback_dir())
+            stream.get_pipeline_request(self._host, self._port)
 
-    def start_stream(self, sid: str):
+    def start_stream(self, sid: ObjectId):
         stream = self.find_stream_by_id(sid)
         if stream:
-            self._client.start_stream(stream.config())
+            stream.start_request()
 
-    def stop_stream(self, sid: str):
+    def stop_stream(self, sid: ObjectId):
         stream = self.find_stream_by_id(sid)
         if stream:
-            self._client.stop_stream(sid)
+            stream.stop_request()
 
-    def restart_stream(self, sid: str):
+    def restart_stream(self, sid: ObjectId):
         stream = self.find_stream_by_id(sid)
         if stream:
-            self._client.restart_stream(sid)
+            stream.restart_request()
 
     def get_vods_in(self) -> list:
         return self._client.get_vods_in()
@@ -212,14 +212,14 @@ class Service(IStreamHandler):
         return self._online_users
 
     def get_streams(self):
-        return self._settings.streams
+        return self._streams
 
-    def find_stream_by_id(self, sid: str):
-        for stream in self._settings.streams:
-            if stream.id == ObjectId(sid):
+    def find_stream_by_id(self, sid: ObjectId) -> IStreamObject:
+        for stream in self._streams:
+            if stream.id == sid:
                 return stream
 
-        return None
+        return None  #
 
     def get_user_role_by_id(self, uid: ObjectId) -> ProviderPair.Roles:
         for user in self._settings.providers:
@@ -238,34 +238,44 @@ class Service(IStreamHandler):
                 ser.delete()
 
     def add_stream(self, stream: IStream):
-        self.__init_stream_runtime_fields(stream)
-        self._settings.add_stream(stream)  #
+        self._settings.add_stream(stream)
+        stream_object = self.__convert_stream(stream)
+        stream_object.stable()
+        self._streams.append(stream_object)
 
     def add_streams(self, streams: [IStream]):
         for stream in streams:
-            self.__init_stream_runtime_fields(stream)
+            stream_object = self.__convert_stream(stream)
+            stream_object.stable()
+            self._streams.append(stream_object)
         self._settings.add_streams(streams)  #
 
-    def update_stream(self, stream):
+    def update_stream(self, stream: IStream):
         stream.save()
+        stream_object = self.find_stream_by_id(stream.id)
+        if stream_object:
+            stream_object.stable()
 
-    def remove_stream(self, sid: str):
-        for stream in list(self._settings.streams):
-            if stream.id == ObjectId(sid):
-                self._client.stop_stream(sid)
-                self._settings.remove_stream(stream)  #
+
+    def remove_stream(self, sid: ObjectId):
+        for stream in list(self._streams):
+            if stream.id == sid:
+                stream.stop_request()
+                self._streams.remove(stream)
+                self._settings.remove_stream(stream.stream())
 
     def remove_all_streams(self):
-        for stream in self._settings.streams:
+        for stream in self._streams:
             self._client.stop_stream(stream.get_id())
+        self._streams = []
         self._settings.remove_all_streams()  #
 
     def stop_all_streams(self):
-        for stream in self._settings.streams:
+        for stream in self._streams:
             self._client.stop_stream(stream.get_id())
 
     def start_all_streams(self):
-        for stream in self._settings.streams:
+        for stream in self._streams:
             self._client.start_stream(stream.config())
 
     def to_dict(self) -> dict:
@@ -281,49 +291,49 @@ class Service(IStreamHandler):
     def make_serial(self) -> Serial:
         return Serial()
 
-    def make_proxy_stream(self) -> ProxyStream:
-        return ProxyStream.make_stream(self._settings)
+    def make_proxy_stream(self) -> ProxyStreamObject:
+        return ProxyStreamObject.make_stream(self._settings)
 
-    def make_proxy_vod(self) -> ProxyStream:
-        return ProxyVodStream.make_stream(self._settings)
+    def make_proxy_vod(self) -> ProxyStreamObject:
+        return ProxyVodStreamObject.make_stream(self._settings)
 
-    def make_relay_stream(self) -> RelayStream:
-        return RelayStream.make_stream(self._settings)
+    def make_relay_stream(self) -> RelayStreamObject:
+        return RelayStreamObject.make_stream(self._settings, self._client)
 
-    def make_vod_relay_stream(self) -> VodRelayStream:
-        return VodRelayStream.make_stream(self._settings)
+    def make_vod_relay_stream(self) -> VodRelayStreamObject:
+        return VodRelayStreamObject.make_stream(self._settings, self._client)
 
-    def make_cod_relay_stream(self) -> CodRelayStream:
-        return CodRelayStream.make_stream(self._settings)
+    def make_cod_relay_stream(self) -> CodRelayStreamObject:
+        return CodRelayStreamObject.make_stream(self._settings, self._client)
 
-    def make_encode_stream(self) -> EncodeStream:
-        return EncodeStream.make_stream(self._settings)
+    def make_encode_stream(self) -> EncodeStreamObject:
+        return EncodeStreamObject.make_stream(self._settings, self._client)
 
-    def make_vod_encode_stream(self) -> VodEncodeStream:
-        return VodEncodeStream.make_stream(self._settings)
+    def make_vod_encode_stream(self) -> VodEncodeStreamObject:
+        return VodEncodeStreamObject.make_stream(self._settings, self._client)
 
-    def make_event_stream(self) -> VodEncodeStream:
-        return EventStream.make_stream(self._settings)
+    def make_event_stream(self) -> VodEncodeStreamObject:
+        return EventStreamObject.make_stream(self._settings, self._client)
 
-    def make_cod_encode_stream(self) -> CodEncodeStream:
-        return CodEncodeStream.make_stream(self._settings)
+    def make_cod_encode_stream(self) -> CodEncodeStreamObject:
+        return CodEncodeStreamObject.make_stream(self._settings, self._client)
 
-    def make_timeshift_recorder_stream(self) -> TimeshiftRecorderStream:
-        return TimeshiftRecorderStream.make_stream(self._settings)
+    def make_timeshift_recorder_stream(self) -> TimeshiftRecorderStreamObject:
+        return TimeshiftRecorderStreamObject.make_stream(self._settings, self._client)
 
-    def make_catchup_stream(self) -> CatchupStream:
-        return CatchupStream.make_stream(self._settings)
+    def make_catchup_stream(self) -> CatchupStreamObject:
+        return CatchupStreamObject.make_stream(self._settings, self._client)
 
-    def make_timeshift_player_stream(self) -> TimeshiftPlayerStream:
-        return TimeshiftPlayerStream.make_stream(self._settings)
+    def make_timeshift_player_stream(self) -> TimeshiftPlayerStreamObject:
+        return TimeshiftPlayerStreamObject.make_stream(self._settings, self._client)
 
-    def make_test_life_stream(self) -> TestLifeStream:
-        return TestLifeStream.make_stream(self._settings)
+    def make_test_life_stream(self) -> TestLifeStreamObject:
+        return TestLifeStreamObject.make_stream(self._settings, self._client)
 
     # handler
     def on_stream_statistic_received(self, params: dict):
         sid = params['id']
-        stream = self.find_stream_by_id(sid)
+        stream = self.find_stream_by_id(ObjectId(sid))
         if stream:
             stream.update_runtime_fields(params)
             self.__notify_front(Service.STREAM_DATA_CHANGED, stream.to_dict())
@@ -341,7 +351,7 @@ class Service(IStreamHandler):
 
     def on_quit_status_stream(self, params: dict):
         sid = params['id']
-        stream = self.find_stream_by_id(sid)
+        stream = self.find_stream_by_id(ObjectId(sid))
         if stream:
             stream.reset()
             self.__notify_front(Service.STREAM_DATA_CHANGED, stream.to_dict())
@@ -351,7 +361,7 @@ class Service(IStreamHandler):
             self.sync(True)
         else:
             self.__reset()
-            for stream in self._settings.streams:
+            for stream in self._streams:
                 stream.reset()
 
     def on_ping_received(self, params: dict):
@@ -390,16 +400,45 @@ class Service(IStreamHandler):
         self._timestamp = stats[ServiceFields.TIMESTAMP]
         self._online_users = OnlineUsers(**stats[ServiceFields.ONLINE_USERS])
 
-    def __init_stream_runtime_fields(self, stream: IStream):
-        stream.set_server_settings(self._settings)
-
     def __reload_from_db(self):
+        self._streams = []
         for stream in self._settings.streams:
-            self.__init_stream_runtime_fields(stream)
+            stream_object = self.__convert_stream(stream)
+            if stream_object:
+                self._streams.append(stream_object)
 
     def __refresh_catchups(self):
-        for stream in self._settings.streams:
-            if stream.get_type() == constants.StreamType.CATCHUP:
-                now = datetime.now()
-                if stream.start > now and now < stream.stop and not stream.is_started():
-                    self._client.start_stream(stream.config())
+        for stream in self._streams:
+            if stream.type == constants.StreamType.CATCHUP:
+                stream.start_request()
+
+    def __convert_stream(self, stream: IStream) -> IStreamObject:
+        stream_type = stream.get_type()
+        if stream_type == constants.StreamType.PROXY:
+            return ProxyStreamObject(stream, self._settings)
+        elif stream_type == constants.StreamType.VOD_PROXY:
+            return ProxyVodStreamObject(stream, self._settings)
+        elif stream_type == constants.StreamType.RELAY:
+            return RelayStreamObject(stream, self._settings, self._client)
+        elif stream_type == constants.StreamType.ENCODE:
+            return EncodeStreamObject(stream, self._settings, self._client)
+        elif stream_type == constants.StreamType.TIMESHIFT_PLAYER:
+            return TimeshiftPlayerStreamObject(stream, self._settings, self._client)
+        elif stream_type == constants.StreamType.TIMESHIFT_RECORDER:
+            return TimeshiftRecorderStreamObject(stream, self._settings, self._client)
+        elif stream_type == constants.StreamType.CATCHUP:
+            return CatchupStreamObject(stream, self._settings, self._client)
+        elif stream_type == constants.StreamType.TEST_LIFE:
+            return TestLifeStreamObject(stream, self._settings, self._client)
+        elif stream_type == constants.StreamType.VOD_RELAY:
+            return VodRelayStreamObject(stream, self._settings, self._client)
+        elif stream_type == constants.StreamType.VOD_ENCODE:
+            return VodEncodeStreamObject(stream, self._settings, self._client)
+        elif stream_type == constants.StreamType.COD_RELAY:
+            return CodRelayStreamObject(stream, self._settings, self._client)
+        elif stream_type == constants.StreamType.COD_ENCODE:
+            return CodEncodeStreamObject(stream, self._settings, self._client)
+        elif stream_type == constants.StreamType.EVENT:
+            return EventStreamObject(stream, self._settings, self._client)
+        else:
+            return None  #

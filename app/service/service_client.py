@@ -101,14 +101,10 @@ class ServiceClient(IClientHandler):
         return self._client.get_pipeline_stream(self._gen_request_id(), stream_id, feedback_directory,
                                                 ServiceClient.get_pipeline_stream_path(host, port, stream_id))
 
-    def sync_service(self, settings):
-        if not settings:
-            return
-
+    def sync_service(self, streams_objects):
         streams = []
-        for stream in settings.streams:
-            stream.set_server_settings(settings)
-            config = stream.config()
+        for streams_object in streams_objects:
+            config = streams_object.config()
             streams.append(config)
 
         return self._client.sync_service(self._gen_request_id(), streams)

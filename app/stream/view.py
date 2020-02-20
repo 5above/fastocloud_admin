@@ -16,7 +16,7 @@ from app.common.stream.forms import ProxyStreamForm, EncodeStreamForm, RelayStre
 from app.common.series.forms import SerialForm
 
 
-def _get_stream_by_id(sid: str):
+def _get_stream_by_id(sid: str) -> IStream:
     try:
         stream = IStream.objects.get({'_id': ObjectId(sid)})
     except IStream.DoesNotExist:
@@ -43,7 +43,7 @@ class StreamView(FlaskView):
             data = request.get_json()
             sids = data['sids']
             for sid in sids:
-                server.start_stream(sid)
+                server.start_stream(ObjectId(sid))
             return jsonify(status='ok'), 200
         return jsonify(status='failed'), 404
 
@@ -55,7 +55,7 @@ class StreamView(FlaskView):
             data = request.get_json()
             sids = data['sids']
             for sid in sids:
-                server.stop_stream(sid)
+                server.stop_stream(ObjectId(sid))
             return jsonify(status='ok'), 200
         return jsonify(status='failed'), 404
 
@@ -67,7 +67,7 @@ class StreamView(FlaskView):
             data = request.get_json()
             sids = data['sids']
             for sid in sids:
-                server.restart_stream(sid)
+                server.restart_stream(ObjectId(sid))
             return jsonify(status='ok'), 200
         return jsonify(status='failed'), 404
 
@@ -86,7 +86,7 @@ class StreamView(FlaskView):
         server = current_user.get_current_server()
         if server:
             sid = request.form['sid']
-            server.get_log_stream(sid)
+            server.get_log_stream(ObjectId(sid))
             return jsonify(status='ok'), 200
         return jsonify(status='failed'), 404
 
@@ -96,7 +96,7 @@ class StreamView(FlaskView):
         server = current_user.get_current_server()
         if server:
             sid = request.form['sid']
-            server.get_pipeline_stream(sid)
+            server.get_pipeline_stream(ObjectId(sid))
             return jsonify(status='ok'), 200
         return jsonify(status='failed'), 404
 
@@ -145,8 +145,8 @@ class StreamView(FlaskView):
     def add_proxy_stream(self):
         server = current_user.get_current_server()
         if server:
-            stream = server.make_proxy_stream()
-            form = ProxyStreamForm(obj=stream)
+            stream_object = server.make_proxy_stream()
+            form = ProxyStreamForm(obj=stream_object.stream())
             if request.method == 'POST' and form.validate_on_submit():
                 new_entry = form.make_entry()
                 new_entry.save()
@@ -161,8 +161,8 @@ class StreamView(FlaskView):
     def add_proxy_vod(self):
         server = current_user.get_current_server()
         if server:
-            stream = server.make_proxy_vod()
-            form = ProxyVodStreamForm(obj=stream)
+            stream_object = server.make_proxy_vod()
+            form = ProxyVodStreamForm(obj=stream_object.stream())
             if request.method == 'POST' and form.validate_on_submit():
                 new_entry = form.make_entry()
                 new_entry.save()
@@ -177,8 +177,8 @@ class StreamView(FlaskView):
     def add_vod_proxy_omdb(self, oid):
         server = current_user.get_current_server()
         if server:
-            stream = server.make_proxy_vod()
-            form = ProxyVodStreamForm(obj=stream)
+            stream_object = server.make_proxy_vod()
+            form = ProxyVodStreamForm(obj=stream_object.stream())
             if request.method == 'GET':
                 res = omdb.imdbid(oid)
                 form.name.data = res['title']
@@ -211,15 +211,16 @@ class StreamView(FlaskView):
     def add_relay(self):
         server = current_user.get_current_server()
         if server:
-            stream = server.make_relay_stream()
-            form = RelayStreamForm(obj=stream)
+            stream_object = server.make_relay_stream()
+            form = RelayStreamForm(obj=stream_object.stream())
             if request.method == 'POST' and form.validate_on_submit():
-                new_entry = form.update_entry(stream)
+                new_entry = form.update_entry(stream_object.stream())
                 new_entry.save()
                 server.add_stream(new_entry)
                 return jsonify(status='ok'), 200
 
-            return render_template('stream/relay/add.html', form=form, feedback_dir=stream.generate_feedback_dir())
+            return render_template('stream/relay/add.html', form=form,
+                                   feedback_dir=stream_object.generate_feedback_dir())
         return jsonify(status='failed'), 404
 
     @login_required
@@ -227,15 +228,16 @@ class StreamView(FlaskView):
     def add_encode(self):
         server = current_user.get_current_server()
         if server:
-            stream = server.make_encode_stream()
-            form = EncodeStreamForm(obj=stream)
+            stream_object = server.make_encode_stream()
+            form = EncodeStreamForm(obj=stream_object.stream())
             if request.method == 'POST' and form.validate_on_submit():
-                new_entry = form.update_entry(stream)
+                new_entry = form.update_entry(stream_object.stream())
                 new_entry.save()
                 server.add_stream(new_entry)
                 return jsonify(status='ok'), 200
 
-            return render_template('stream/encode/add.html', form=form, feedback_dir=stream.generate_feedback_dir())
+            return render_template('stream/encode/add.html', form=form,
+                                   feedback_dir=stream_object.generate_feedback_dir())
         return jsonify(status='failed'), 404
 
     @login_required
@@ -243,17 +245,17 @@ class StreamView(FlaskView):
     def add_timeshift_recorder(self):
         server = current_user.get_current_server()
         if server:
-            stream = server.make_timeshift_recorder_stream()
-            form = TimeshiftRecorderStreamForm(obj=stream)
+            stream_object = server.make_timeshift_recorder_stream()
+            form = TimeshiftRecorderStreamForm(obj=stream_object.stream())
             if request.method == 'POST':  # FIXME form.validate_on_submit()
-                new_entry = form.update_entry(stream)
+                new_entry = form.update_entry(stream_object.stream())
                 new_entry.save()
                 server.add_stream(new_entry)
                 return jsonify(status='ok'), 200
 
             return render_template('stream/timeshift_recorder/add.html', form=form,
-                                   feedback_dir=stream.generate_feedback_dir(),
-                                   timeshift_dir=stream.generate_timeshift_dir())
+                                   feedback_dir=stream_object.generate_feedback_dir(),
+                                   timeshift_dir=stream_object.generate_timeshift_dir())
         return jsonify(status='failed'), 404
 
     @login_required
@@ -261,15 +263,16 @@ class StreamView(FlaskView):
     def add_test_life(self):
         server = current_user.get_current_server()
         if server:
-            stream = server.make_test_life_stream()
-            form = TestLifeStreamForm(obj=stream)
+            stream_object = server.make_test_life_stream()
+            form = TestLifeStreamForm(obj=stream_object.stream())
             if request.method == 'POST':  # FIXME form.validate_on_submit()
-                new_entry = form.update_entry(stream)
+                new_entry = form.update_entry(stream_object.stream())
                 new_entry.save()
                 server.add_stream(new_entry)
                 return jsonify(status='ok'), 200
 
-            return render_template('stream/test_life/add.html', form=form, feedback_dir=stream.generate_feedback_dir())
+            return render_template('stream/test_life/add.html', form=form,
+                                   feedback_dir=stream_object.generate_feedback_dir())
         return jsonify(status='failed'), 404
 
     @login_required
@@ -277,16 +280,17 @@ class StreamView(FlaskView):
     def add_catchup(self):
         server = current_user.get_current_server()
         if server:
-            stream = server.make_catchup_stream()
-            form = CatchupStreamForm(obj=stream)
+            stream_object = server.make_catchup_stream()
+            form = CatchupStreamForm(obj=stream_object.stream())
             if request.method == 'POST':  # FIXME form.validate_on_submit()
-                new_entry = form.update_entry(stream)
+                new_entry = form.update_entry(stream_object.stream())
                 new_entry.save()
                 server.add_stream(new_entry)
                 return jsonify(status='ok'), 200
 
-            return render_template('stream/catchup/add.html', form=form, feedback_dir=stream.generate_feedback_dir(),
-                                   timeshift_dir=stream.generate_timeshift_dir())
+            return render_template('stream/catchup/add.html', form=form,
+                                   feedback_dir=stream_object.generate_feedback_dir(),
+                                   timeshift_dir=stream_object.generate_timeshift_dir())
         return jsonify(status='failed'), 404
 
     @login_required
@@ -294,16 +298,16 @@ class StreamView(FlaskView):
     def add_timeshift_player(self):
         server = current_user.get_current_server()
         if server:
-            stream = server.make_timeshift_player_stream()
-            form = TimeshiftPlayerStreamForm(obj=stream)
+            stream_object = server.make_timeshift_player_stream()
+            form = TimeshiftPlayerStreamForm(obj=stream_object.stream())
             if request.method == 'POST' and form.validate_on_submit():
-                new_entry = form.update_entry(stream)
+                new_entry = form.update_entry(stream_object.stream())
                 new_entry.save()
                 server.add_stream(new_entry)
                 return jsonify(status='ok'), 200
 
             return render_template('stream/timeshift_player/add.html', form=form,
-                                   feedback_dir=stream.generate_feedback_dir())
+                                   feedback_dir=stream_object.generate_feedback_dir())
         return jsonify(status='failed'), 404
 
     @login_required
@@ -311,16 +315,16 @@ class StreamView(FlaskView):
     def add_vod_relay(self):
         server = current_user.get_current_server()
         if server:
-            stream = server.make_vod_relay_stream()
-            form = VodRelayStreamForm(obj=stream)
+            stream_object = server.make_vod_relay_stream()
+            form = VodRelayStreamForm(obj=stream_object.stream())
             if request.method == 'POST' and form.validate_on_submit():
-                new_entry = form.update_entry(stream)
+                new_entry = form.update_entry(stream_object.stream())
                 new_entry.save()
                 server.add_stream(new_entry)
                 return jsonify(status='ok'), 200
 
             return render_template('stream/vod_relay/add.html', form=form,
-                                   feedback_dir=stream.generate_feedback_dir())
+                                   feedback_dir=stream_object.generate_feedback_dir())
         return jsonify(status='failed'), 404
 
     @login_required
@@ -328,16 +332,16 @@ class StreamView(FlaskView):
     def add_vod_encode(self):
         server = current_user.get_current_server()
         if server:
-            stream = server.make_vod_encode_stream()
-            form = VodEncodeStreamForm(obj=stream)
+            stream_object = server.make_vod_encode_stream()
+            form = VodEncodeStreamForm(obj=stream_object.stream())
             if request.method == 'POST' and form.validate_on_submit():
-                new_entry = form.update_entry(stream)
+                new_entry = form.update_entry(stream_object.stream())
                 new_entry.save()
                 server.add_stream(new_entry)
                 return jsonify(status='ok'), 200
 
             return render_template('stream/vod_encode/add.html', form=form,
-                                   feedback_dir=stream.generate_feedback_dir())
+                                   feedback_dir=stream_object.generate_feedback_dir())
         return jsonify(status='failed'), 404
 
     @login_required
@@ -345,16 +349,16 @@ class StreamView(FlaskView):
     def add_event(self):
         server = current_user.get_current_server()
         if server:
-            stream = server.make_event_stream()
-            form = EventStreamForm(obj=stream)
+            stream_object = server.make_event_stream()
+            form = EventStreamForm(obj=stream_object.stream())
             if request.method == 'POST' and form.validate_on_submit():
-                new_entry = form.update_entry(stream)
+                new_entry = form.update_entry(stream_object.stream())
                 new_entry.save()
                 server.add_stream(new_entry)
                 return jsonify(status='ok'), 200
 
             return render_template('stream/event/add.html', form=form,
-                                   feedback_dir=stream.generate_feedback_dir())
+                                   feedback_dir=stream_object.generate_feedback_dir())
         return jsonify(status='failed'), 404
 
     @login_required
@@ -362,16 +366,16 @@ class StreamView(FlaskView):
     def add_cod_relay(self):
         server = current_user.get_current_server()
         if server:
-            stream = server.make_cod_relay_stream()
-            form = CodRelayStreamForm(obj=stream)
+            stream_object = server.make_cod_relay_stream()
+            form = CodRelayStreamForm(obj=stream_object.stream())
             if request.method == 'POST' and form.validate_on_submit():
-                new_entry = form.update_entry(stream)
+                new_entry = form.update_entry(stream_object.stream())
                 new_entry.save()
                 server.add_stream(new_entry)
                 return jsonify(status='ok'), 200
 
             return render_template('stream/cod_relay/add.html', form=form,
-                                   feedback_dir=stream.generate_feedback_dir())
+                                   feedback_dir=stream_object.generate_feedback_dir())
         return jsonify(status='failed'), 404
 
     @login_required
@@ -379,16 +383,16 @@ class StreamView(FlaskView):
     def add_cod_encode(self):
         server = current_user.get_current_server()
         if server:
-            stream = server.make_cod_encode_stream()
-            form = CodEncodeStreamForm(obj=stream)
+            stream_object = server.make_cod_encode_stream()
+            form = CodEncodeStreamForm(obj=stream_object.stream())
             if request.method == 'POST' and form.validate_on_submit():
-                new_entry = form.update_entry(stream)
+                new_entry = form.update_entry(stream_object.stream())
                 new_entry.save()
                 server.add_stream(new_entry)
                 return jsonify(status='ok'), 200
 
             return render_template('stream/cod_encode/add.html', form=form,
-                                   feedback_dir=stream.generate_feedback_dir())
+                                   feedback_dir=stream_object.generate_feedback_dir())
         return jsonify(status='failed'), 404
 
     @login_required
@@ -396,9 +400,10 @@ class StreamView(FlaskView):
     def edit(self, sid):
         server = current_user.get_current_server()
         if server:
-            stream = server.find_stream_by_id(sid)
-            if stream:
-                type = stream.get_type()
+            stream_object = server.find_stream_by_id(ObjectId(sid))
+            if stream_object:
+                type = stream_object.type
+                stream = stream_object.stream()
                 if type == constants.StreamType.PROXY:
                     form = ProxyStreamForm(obj=stream)
 
@@ -426,7 +431,7 @@ class StreamView(FlaskView):
                         return jsonify(status='ok'), 200
 
                     return render_template('stream/relay/edit.html', form=form,
-                                           feedback_dir=stream.generate_feedback_dir())
+                                           feedback_dir=stream_object.generate_feedback_dir())
                 elif type == constants.StreamType.ENCODE:
                     form = EncodeStreamForm(obj=stream)
 
@@ -436,7 +441,7 @@ class StreamView(FlaskView):
                         return jsonify(status='ok'), 200
 
                     return render_template('stream/encode/edit.html', form=form,
-                                           feedback_dir=stream.generate_feedback_dir())
+                                           feedback_dir=stream_object.generate_feedback_dir())
                 elif type == constants.StreamType.TIMESHIFT_RECORDER:
                     form = TimeshiftRecorderStreamForm(obj=stream)
 
@@ -446,8 +451,8 @@ class StreamView(FlaskView):
                         return jsonify(status='ok'), 200
 
                     return render_template('stream/timeshift_recorder/edit.html', form=form,
-                                           feedback_dir=stream.generate_feedback_dir(),
-                                           timeshift_dir=stream.generate_timeshift_dir())
+                                           feedback_dir=stream_object.generate_feedback_dir(),
+                                           timeshift_dir=stream_object.generate_timeshift_dir())
                 elif type == constants.StreamType.CATCHUP:
                     form = CatchupStreamForm(obj=stream)
 
@@ -457,8 +462,8 @@ class StreamView(FlaskView):
                         return jsonify(status='ok'), 200
 
                     return render_template('stream/catchup/edit.html', form=form,
-                                           feedback_dir=stream.generate_feedback_dir(),
-                                           timeshift_dir=stream.generate_timeshift_dir())
+                                           feedback_dir=stream_object.generate_feedback_dir(),
+                                           timeshift_dir=stream_object.generate_timeshift_dir())
                 elif type == constants.StreamType.TIMESHIFT_PLAYER:
                     form = TimeshiftPlayerStreamForm(obj=stream)
 
@@ -468,7 +473,7 @@ class StreamView(FlaskView):
                         return jsonify(status='ok'), 200
 
                     return render_template('stream/timeshift_player/edit.html', form=form,
-                                           feedback_dir=stream.generate_feedback_dir())
+                                           feedback_dir=stream_object.generate_feedback_dir())
                 elif type == constants.StreamType.TEST_LIFE:
                     form = TestLifeStreamForm(obj=stream)
 
@@ -478,7 +483,7 @@ class StreamView(FlaskView):
                         return jsonify(status='ok'), 200
 
                     return render_template('stream/test_life/edit.html', form=form,
-                                           feedback_dir=stream.generate_feedback_dir())
+                                           feedback_dir=stream_object.generate_feedback_dir())
                 elif type == constants.StreamType.VOD_RELAY:
                     form = VodRelayStreamForm(obj=stream)
 
@@ -488,7 +493,7 @@ class StreamView(FlaskView):
                         return jsonify(status='ok'), 200
 
                     return render_template('stream/vod_relay/edit.html', form=form,
-                                           feedback_dir=stream.generate_feedback_dir())
+                                           feedback_dir=stream_object.generate_feedback_dir())
                 elif type == constants.StreamType.VOD_ENCODE:
                     form = VodEncodeStreamForm(obj=stream)
 
@@ -498,7 +503,7 @@ class StreamView(FlaskView):
                         return jsonify(status='ok'), 200
 
                     return render_template('stream/vod_encode/edit.html', form=form,
-                                           feedback_dir=stream.generate_feedback_dir())
+                                           feedback_dir=stream_object.generate_feedback_dir())
                 elif type == constants.StreamType.COD_RELAY:
                     form = CodRelayStreamForm(obj=stream)
 
@@ -508,7 +513,7 @@ class StreamView(FlaskView):
                         return jsonify(status='ok'), 200
 
                     return render_template('stream/cod_relay/edit.html', form=form,
-                                           feedback_dir=stream.generate_feedback_dir())
+                                           feedback_dir=stream_object.generate_feedback_dir())
                 elif type == constants.StreamType.COD_ENCODE:
                     form = CodEncodeStreamForm(obj=stream)
 
@@ -518,7 +523,7 @@ class StreamView(FlaskView):
                         return jsonify(status='ok'), 200
 
                     return render_template('stream/cod_encode/edit.html', form=form,
-                                           feedback_dir=stream.generate_feedback_dir())
+                                           feedback_dir=stream_object.generate_feedback_dir())
                 elif type == constants.StreamType.EVENT:
                     form = EventStreamForm(obj=stream)
 
@@ -528,7 +533,7 @@ class StreamView(FlaskView):
                         return jsonify(status='ok'), 200
 
                     return render_template('stream/event/edit.html', form=form,
-                                           feedback_dir=stream.generate_feedback_dir())
+                                           feedback_dir=stream_object.generate_feedback_dir())
 
         return jsonify(status='failed'), 404
 
@@ -540,7 +545,7 @@ class StreamView(FlaskView):
         server = current_user.get_current_server()
         if server:
             for sid in sids:
-                server.remove_stream(sid)
+                server.remove_stream(ObjectId(sid))
             return jsonify(status='ok'), 200
         return jsonify(status='failed'), 404
 
