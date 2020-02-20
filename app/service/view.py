@@ -63,32 +63,32 @@ class ServiceView(FlaskView):
                         stream_object = server.make_relay_stream()
                         stream = stream_object.stream()
                         sid = stream.output[0].id
-                        stream.output = [stream.generate_http_link(constants.HlsType.HLS_PULL, oid=sid)]
+                        stream.output = [stream_object.generate_http_link(constants.HlsType.HLS_PULL, oid=sid)]
                     elif stream_type == constants.StreamType.ENCODE:
                         stream_object = server.make_encode_stream()
                         stream = stream_object.stream()
                         sid = stream.output[0].id
-                        stream.output = [stream.generate_http_link(constants.HlsType.HLS_PULL, oid=sid)]
+                        stream.output = [stream_object.generate_http_link(constants.HlsType.HLS_PULL, oid=sid)]
                     elif stream_type == constants.StreamType.VOD_RELAY:
                         stream_object = server.make_vod_relay_stream()
                         stream = stream_object.stream()
                         sid = stream.output[0].id
-                        stream.output = [stream.generate_vod_link(constants.HlsType.HLS_PULL, oid=sid)]
+                        stream.output = [stream_object.generate_vod_link(constants.HlsType.HLS_PULL, oid=sid)]
                     elif stream_type == constants.StreamType.VOD_ENCODE:
                         stream_object = server.make_vod_encode_stream()
                         stream = stream_object.stream()
                         sid = stream.output[0].id
-                        stream.output = [stream.generate_vod_link(constants.HlsType.HLS_PULL, oid=sid)]
+                        stream.output = [stream_object.generate_vod_link(constants.HlsType.HLS_PULL, oid=sid)]
                     elif stream_type == constants.StreamType.COD_RELAY:
                         stream_object = server.make_cod_relay_stream()
                         stream = stream_object.stream()
                         sid = stream.output[0].id
-                        stream.output = [stream.generate_cod_link(constants.HlsType.HLS_PULL, oid=sid)]
+                        stream.output = [stream_object.generate_cod_link(constants.HlsType.HLS_PULL, oid=sid)]
                     elif stream_type == constants.StreamType.COD_ENCODE:
                         stream_object = server.make_cod_encode_stream()
                         stream = stream_object.stream()
                         sid = stream.output[0].id
-                        stream.output = [stream.generate_cod_link(constants.HlsType.HLS_PULL, oid=sid)]
+                        stream.output = [stream_object.generate_cod_link(constants.HlsType.HLS_PULL, oid=sid)]
                     elif stream_type == constants.StreamType.CATCHUP:
                         stream_object = server.make_catchup_stream()
                         stream = stream_object.stream()
