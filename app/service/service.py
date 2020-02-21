@@ -3,10 +3,11 @@ from bson.objectid import ObjectId
 
 from pyfastocloud_models.stream.entry import IStream
 from pyfastocloud.client_constants import ClientStatus
-
+from pyfastocloud_models.utils.utils import date_to_utc_msec
 from pyfastocloud_models.series.entry import Serial
 import pyfastocloud_models.constants as constants
 from pyfastocloud_models.service.entry import ServiceSettings, ProviderPair
+
 from app.service.service_client import ServiceClient, OperationSystem
 from app.service.stream_handler import IStreamHandler
 from app.service.stream import IStreamObject, ProxyStreamObject, ProxyVodStreamObject, RelayStreamObject, \
@@ -293,7 +294,7 @@ class Service(IStreamHandler):
                 ServiceFields.MEMORY_FREE: self._memory_free, ServiceFields.HDD_TOTAL: self._hdd_total,
                 ServiceFields.HDD_FREE: self._hdd_free, ServiceFields.BANDWIDTH_IN: self._bandwidth_in,
                 ServiceFields.BANDWIDTH_OUT: self._bandwidth_out, ServiceFields.VERSION: self.version,
-                ServiceFields.UPTIME: self._uptime, ServiceFields.SYNCTIME: self._sync_time,
+                ServiceFields.UPTIME: self._uptime, ServiceFields.SYNCTIME: date_to_utc_msec(self._sync_time),
                 ServiceFields.TIMESTAMP: self._timestamp, ServiceFields.STATUS: self.status,
                 ServiceFields.ONLINE_USERS: str(self.online_users), ServiceFields.OS: str(self.os)}
 
