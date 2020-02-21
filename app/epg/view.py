@@ -5,11 +5,21 @@ import shutil
 from flask_classy import FlaskView, route
 from flask import render_template, request, jsonify, redirect, url_for
 from flask_login import login_required
+from bson.objectid import ObjectId
 
 from app.common.epg.forms import EpgForm, UploadEpgForm, gen_extension
 from pyfastocloud_models.epg.entry import Epg
 from pyfastocloud_models.utils.utils import download_file
 from app import app, get_epg_tmp_folder
+
+
+def _get_epg_by_id(sid: str):
+    try:
+        epg = Epg.objects.get({'_id': ObjectId(sid)})
+    except Epg.DoesNotExist:
+        return None
+    else:
+        return epg
 
 
 def gunzip(file_path, output_path):
@@ -71,7 +81,7 @@ class EpgView(FlaskView):
     @route('/remove', methods=['POST'])
     def remove(self):
         sid = request.form['sid']
-        epg = Epg.objects(id=sid).first()
+        epg = _get_epg_by_id(sid)
         if epg:
             epg.delete()
             return jsonify(status='ok'), 200
@@ -81,7 +91,7 @@ class EpgView(FlaskView):
     @login_required
     @route('/edit/<sid>', methods=['GET', 'POST'])
     def edit(self, sid):
-        epg = Epg.objects(id=sid).first()
+        epg = _get_epg_by_id(sid)
         form = EpgForm(obj=epg)
 
         if request.method == 'POST' and form.validate_on_submit():
