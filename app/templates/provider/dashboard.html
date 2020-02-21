@@ -1267,6 +1267,9 @@ Dashboard | {{ config['PUBLIC_CONFIG'].site.title }}
       var service_status = $('#service_status');
       const kStatuses = ['INIT', 'CONNECTED', 'ACTIVE'];
       service_status.text(kStatuses[service.status]);
+      var service_sync = $('#service_sync');
+      var sync_datetime = new Date(service.synctime);
+      service_sync.text(sync_datetime.toISOString());
       var service_memory_total = $('#service_memory_total');
       service_memory_total.text((service.memory_total / (1024 * 1024)).toFixed(4) + ' MB');
       var service_memory_free = $('#service_memory_free');

@@ -118,8 +118,7 @@ class Service(IStreamHandler):
         res = self._client.sync_service(self._streams)
         # self.__refresh_catchups()
         if res:
-            now = datetime.now()
-            self._sync_time = now
+            self._sync_time = datetime.now()
         return res
 
     def get_log_stream(self, sid: ObjectId):
@@ -204,7 +203,7 @@ class Service(IStreamHandler):
 
     @property
     def synctime(self):
-        return self._sync_time
+        return date_to_utc_msec(self._sync_time)
 
     @property
     def timestamp(self):
@@ -294,7 +293,7 @@ class Service(IStreamHandler):
                 ServiceFields.MEMORY_FREE: self._memory_free, ServiceFields.HDD_TOTAL: self._hdd_total,
                 ServiceFields.HDD_FREE: self._hdd_free, ServiceFields.BANDWIDTH_IN: self._bandwidth_in,
                 ServiceFields.BANDWIDTH_OUT: self._bandwidth_out, ServiceFields.VERSION: self.version,
-                ServiceFields.UPTIME: self._uptime, ServiceFields.SYNCTIME: date_to_utc_msec(self._sync_time),
+                ServiceFields.UPTIME: self._uptime, ServiceFields.SYNCTIME: self.synctime,
                 ServiceFields.TIMESTAMP: self._timestamp, ServiceFields.STATUS: self.status,
                 ServiceFields.ONLINE_USERS: str(self.online_users), ServiceFields.OS: str(self.os)}
 
