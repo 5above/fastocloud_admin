@@ -1,3 +1,4 @@
+from datetime import datetime
 from bson.objectid import ObjectId
 
 from pyfastocloud_models.stream.entry import IStream
@@ -43,6 +44,7 @@ class ServiceFields:
     BANDWIDTH_OUT = 'bandwidth_out'
     VERSION = 'version'
     UPTIME = 'uptime'
+    SYNCTIME = 'synctime'
     TIMESTAMP = 'timestamp'
     STATUS = 'status'
     ONLINE_USERS = 'online_users'
@@ -67,6 +69,7 @@ class Service(IStreamHandler):
     _bandwidth_in = INIT_VALUE
     _bandwidth_out = INIT_VALUE
     _uptime = CALCULATE_VALUE
+    _sync_time = CALCULATE_VALUE
     _timestamp = CALCULATE_VALUE
     _streams = []
     _online_users = None
@@ -113,6 +116,9 @@ class Service(IStreamHandler):
             self._client.prepare_service(self._settings)
         res = self._client.sync_service(self._streams)
         # self.__refresh_catchups()
+        if res:
+            now = datetime.now()
+            self._sync_time = now
         return res
 
     def get_log_stream(self, sid: ObjectId):
@@ -194,6 +200,10 @@ class Service(IStreamHandler):
     @property
     def uptime(self):
         return self._uptime
+
+    @property
+    def synctime(self):
+        return self._sync_time
 
     @property
     def timestamp(self):
@@ -283,9 +293,9 @@ class Service(IStreamHandler):
                 ServiceFields.MEMORY_FREE: self._memory_free, ServiceFields.HDD_TOTAL: self._hdd_total,
                 ServiceFields.HDD_FREE: self._hdd_free, ServiceFields.BANDWIDTH_IN: self._bandwidth_in,
                 ServiceFields.BANDWIDTH_OUT: self._bandwidth_out, ServiceFields.VERSION: self.version,
-                ServiceFields.UPTIME: self._uptime, ServiceFields.TIMESTAMP: self._timestamp,
-                ServiceFields.STATUS: self.status, ServiceFields.ONLINE_USERS: str(self.online_users),
-                ServiceFields.OS: str(self.os)}
+                ServiceFields.UPTIME: self._uptime, ServiceFields.SYNCTIME: self._sync_time,
+                ServiceFields.TIMESTAMP: self._timestamp, ServiceFields.STATUS: self.status,
+                ServiceFields.ONLINE_USERS: str(self.online_users), ServiceFields.OS: str(self.os)}
 
     def make_serial(self) -> Serial:
         return Serial()
@@ -382,6 +392,7 @@ class Service(IStreamHandler):
         self._bandwidth_in = Service.INIT_VALUE
         self._bandwidth_out = Service.INIT_VALUE
         self._uptime = Service.CALCULATE_VALUE
+        self._sync_time = Service.CALCULATE_VALUE
         self._timestamp = Service.CALCULATE_VALUE
         self._online_users = None
 

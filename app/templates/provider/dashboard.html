@@ -242,6 +242,10 @@ Dashboard | {{ config['PUBLIC_CONFIG'].site.title }}
                         <b>State:</b>
                         <p id='service_status'>{{ ['INIT', 'CONNECTED', 'ACTIVE'][service.status] }}</p>
                     </div>
+                    <div class="col-md-2">
+                        <b>Sync time:</b>
+                        <p id='service_sync'>{{ service.synctime }}</p>
+                    </div>
                 </div>
                 <div class="row">
                     <div class="col-md-2">
