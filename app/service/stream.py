@@ -594,7 +594,7 @@ class VodRelayStreamObject(RelayStreamObject):
 
     def to_dict(self) -> dict:
         front = RelayStreamObject.to_dict(self)
-        base = VodBasedStream.to_dict(self._stream)
+        base = VodBasedStreamObject.to_dict(self._stream)
         return {**front, **base}
 
     def config(self) -> dict:
@@ -620,7 +620,7 @@ class VodEncodeStreamObject(EncodeStreamObject):
 
     def to_dict(self) -> dict:
         front = EncodeStreamObject.to_dict(self)
-        base = VodBasedStream.to_dict(self._stream)
+        base = VodBasedStreamObject.to_dict(self._stream)
         return {**front, **base}
 
     def config(self) -> dict:
