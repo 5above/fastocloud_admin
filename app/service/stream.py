@@ -479,7 +479,8 @@ class CatchupStreamObject(TimeshiftRecorderStreamObject):
         conf = super(CatchupStreamObject, self).config()
         conf[ConfigFields.TIMESHIFT_DIR] = self._generate_catchup_dir(oid=OutputUrl.generate_id())
         diff_msec = self._stream.stop - self._stream.start
-        conf[ConfigFields.AUTO_EXIT_TIME_FIELD] = diff_msec / 1000
+        seconds = int(diff_msec.total_seconds())
+        conf[ConfigFields.AUTO_EXIT_TIME_FIELD] = seconds
         return conf
 
     def start_request(self):
