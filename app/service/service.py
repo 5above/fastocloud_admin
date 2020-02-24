@@ -116,7 +116,7 @@ class Service(IStreamHandler):
         if prepare:
             self._client.prepare_service(self._settings)
         res = self._client.sync_service(self._streams)
-        # self.__refresh_catchups()
+        self.__refresh_catchups()
         if res:
             self._sync_time = datetime.now()
         return res
@@ -418,6 +418,14 @@ class Service(IStreamHandler):
                 self._streams.append(stream_object)
 
     def __refresh_catchups(self):
+        self._settings.refresh_from_db()
+        # FIXME workaround, need to listen load balance
+        for stream in self._settings.streams:
+            if not self.find_stream_by_id(stream.pk):
+                stream_object = self.__convert_stream(stream)
+                if stream_object:
+                    self._streams.append(stream_object)
+
         for stream in self._streams:
             if stream.type == constants.StreamType.CATCHUP:
                 stream.start_request()

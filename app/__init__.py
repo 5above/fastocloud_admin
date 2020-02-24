@@ -48,7 +48,7 @@ def init_project(static_folder, *args):
 
     _app.wsgi_app = ProxyFix(_app.wsgi_app)
     Bootstrap(_app)
-    PyModm(_app)
+    _db = PyModm(_app)
     _mail = Mail(_app)
     _socketio = SocketIO(_app)
     _login_manager = LoginManager(_app)
@@ -80,10 +80,10 @@ def init_project(static_folder, *args):
     omdb_api_key = _app.config.get('OMDB_KEY')
     _omdb = OMDBClient(apikey=omdb_api_key)
 
-    return _app, _mail, _login_manager, _servers_manager, _omdb
+    return _app, _mail, _login_manager, _servers_manager, _omdb, _db
 
 
-app, mail, login_manager, servers_manager, omdb = init_project(
+app, mail, login_manager, servers_manager, omdb, db = init_project(
     'static',
     'config/public_config.py',
     'config/config.py',
