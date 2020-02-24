@@ -485,7 +485,7 @@ class CatchupStreamObject(TimeshiftRecorderStreamObject):
 
     def start_request(self):
         now = datetime.now()
-        if self._stream.start > now and now < self._stream.stop:
+        if (now >= self._stream.start) and (now < self._stream.stop):
             super(CatchupStreamObject, self).start_request()
 
     # private:
