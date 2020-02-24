@@ -723,6 +723,15 @@ Dashboard | {{ config['PUBLIC_CONFIG'].site.title }}
                                         <th class="stream_number">#</th>
                                         <th class="stream_name">Name</th>
                                         <th class="stream_type">Type</th>
+                                        <th class="stream_status">Status</th>
+                                        <th class="stream_restarts">Restarts</th>
+                                        <th class="stream_cpu">CPU (%)</th>
+                                        <th class="stream_rss">RSS (MB)</th>
+                                        <th class="stream_inbps">In (Mbps)</th>
+                                        <th class="stream_outbps">Out (Mbps)</th>
+                                        <th class="stream_work_time">TTL (sec)</th>
+                                        <th class="stream_live_time">RTL (sec)</th>
+                                        <th class="stream_quality">Quality (%)</th>
                                         <th class="stream_price">Price ($)</th>
                                         <th class="stream_actions">Actions</th>
                                     </tr>
@@ -798,10 +807,24 @@ Dashboard | {{ config['PUBLIC_CONFIG'].site.title }}
                                         <td>
                                             {{ ['PROXY','VOD_PROXY','RELAY', 'ENCODE', 'TIMESHIFT_PLAYER',
                                             'TIMESHIFT_RECORDER',
-                                            'CATCHUP',
-                                            'TEST_LIFE',
-                                            'VOD_RELAY', 'VOD_ENCODE','COD_RELAY', 'COD_ENCODE', 'EVENT'][catchup.type]
-                                            }}
+                                            'CATCHUP', 'TEST_LIFE', 'VOD_RELAY', 'VOD_ENCODE', 'COD_RELAY',
+                                            'COD_ENCODE', 'EVENT'][catchup.type] }}
+                                        </td>
+                                        <td>{{ ['NEW', 'INIT', 'STARTED', 'READY', 'PLAYING', 'FROZEN',
+                                            'WAITING'][catchup.status] }}
+                                        </td>
+                                        <td>{{ catchup.restarts }}</td>
+                                        <td>{{ catchup.cpu | round(2, 'floor') }}</td>
+                                        <td>{{ (catchup.rss / (1024 * 1024)) | round(4, 'floor') }}</td>
+                                        <td>{{ (catchup.input_streams|sum(attribute='bps') / (1024 * 1024 / 8)) | round(4,
+                                            'floor') }}
+                                        </td>
+                                        <td>{{ (catchup.output_streams|sum(attribute='bps') / (1024 * 1024 / 8))| round(4,
+                                            'floor') }}
+                                        </td>
+                                        <td>{{ (catchup.timestamp - catchup.start_time)/1000 }}</td>
+                                        <td>{{ (catchup.timestamp - catchup.loop_start_time)/1000 }}</td>
+                                        <td>{{ catchup.quality | round(2, 'floor') }}
                                         </td>
                                         <td>{{ catchup.price }}</td>
                                         <td>
