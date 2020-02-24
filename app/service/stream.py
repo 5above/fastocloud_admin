@@ -473,11 +473,12 @@ class CatchupStreamObject(TimeshiftRecorderStreamObject):
     def make_stream(cls, settings: ServiceSettings, client: ServiceClient):
         cat = CatchupStream()
         cat.input = [InputUrl(id=InputUrl.generate_id())]
+        cat.output = [OutputUrl(id=OutputUrl.generate_id())]
         return cls(cat, settings, client)
 
     def config(self) -> dict:
         conf = super(CatchupStreamObject, self).config()
-        conf[ConfigFields.TIMESHIFT_DIR] = self._generate_catchup_dir(oid=OutputUrl.generate_id())
+        conf[ConfigFields.TIMESHIFT_DIR] = self._generate_catchup_dir()
         diff_msec = self._stream.stop - self._stream.start
         seconds = int(diff_msec.total_seconds())
         conf[ConfigFields.AUTO_EXIT_TIME_FIELD] = seconds
@@ -489,7 +490,8 @@ class CatchupStreamObject(TimeshiftRecorderStreamObject):
             super(CatchupStreamObject, self).start_request()
 
     # private:
-    def _generate_catchup_dir(self, oid: int):
+    def _generate_catchup_dir(self):
+        oid = self.stream().output[0].id
         return '{0}/{1}/{2}/{3}'.format(self._settings.hls_directory, self._stream.get_type(), self._stream.get_id(),
                                         oid)
 
