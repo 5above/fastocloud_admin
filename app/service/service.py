@@ -421,7 +421,7 @@ class Service(IStreamHandler):
         self._settings.refresh_from_db()
         # FIXME workaround, need to listen load balance
         for stream in self._settings.streams:
-            if stream.type == constants.StreamType.CATCHUP:
+            if stream.get_type() == constants.StreamType.CATCHUP:
                 if not self.find_stream_by_id(stream.pk):
                     stream_object = self.__convert_stream(stream)
                     if stream_object:
