@@ -52,6 +52,22 @@ class SubscriberView(FlaskView):
         return render_template('subscriber/edit.html', form=form)
 
     @login_required
+    @route('/wedit/<sid>', methods=['GET', 'POST'])
+    def wedit(self, sid):
+        subscriber = _get_subscriber_by_id(sid)
+        form = SignupForm(obj=subscriber)
+        if request.method == 'POST':
+            old_password = subscriber.password
+            form.validate_password(False)
+            if form.validate_on_submit():
+                subscriber = form.update_entry(subscriber)
+                subscriber.password = old_password
+                subscriber.save()
+                return jsonify(status='ok'), 200
+
+        return render_template('subscriber/wedit.html', form=form)
+
+    @login_required
     @route('/remove', methods=['POST'])
     def remove(self):
         data = request.get_json()

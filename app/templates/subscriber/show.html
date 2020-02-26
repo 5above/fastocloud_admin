@@ -66,6 +66,10 @@ Subscribers | {{ config['PUBLIC_CONFIG'].site.title }}
                                     onclick="edit_subscriber('{{ subscriber.id }}')">
                                 Edit
                             </button>
+                            <button type="submit" class="btn btn-success btn-xs"
+                                    onclick="wedit_subscriber('{{ subscriber.id }}')">
+                                WEdit
+                            </button>
                             <button type="submit" class="btn btn-danger btn-xs"
                                     onclick="remove_subscriber('{{ subscriber.id }}')">
                                 Remove
@@ -147,6 +151,19 @@ Subscribers | {{ config['PUBLIC_CONFIG'].site.title }}
 
     function edit_subscriber(sid) {
         var url = "/subscriber/edit/" + sid;
+        $.get(url, function(data) {
+            $('#service_dialog .modal-content').html(data);
+            $('#service_dialog').modal();
+
+            $('#apply').click(function(event) {
+                event.preventDefault();
+                edit_subscriber_entry(url);
+            })
+        });
+    }
+
+     function wedit_subscriber(sid) {
+        var url = "/subscriber/wedit/" + sid;
         $.get(url, function(data) {
             $('#service_dialog .modal-content').html(data);
             $('#service_dialog').modal();
