@@ -27,6 +27,7 @@ class ServiceClient(IClientHandler):
     VODS_HOST = 'vods_host'
     CODS_HOST = 'cods_host'
     VERSION = 'version'
+    EXP_TIME = 'expiration_time'
     OS = 'os'
 
     @staticmethod
@@ -140,6 +141,9 @@ class ServiceClient(IClientHandler):
     def get_version(self) -> str:
         return self._version
 
+    def get_exp_time(self):
+        return self._exp_time
+
     # handler
     def process_response(self, client, req: Request, resp: Response):
         if not req:
@@ -152,7 +156,8 @@ class ServiceClient(IClientHandler):
                 os = OperationSystem(**result[ServiceClient.OS])
 
                 self._set_runtime_fields(result[ServiceClient.HTTP_HOST], result[ServiceClient.VODS_HOST],
-                                         result[ServiceClient.CODS_HOST], result[ServiceClient.VERSION], os)
+                                         result[ServiceClient.CODS_HOST], result[ServiceClient.VERSION], os,
+                                         result[ServiceClient.EXP_TIME])
                 self._handler.on_service_statistic_received(result)
 
         if req.method == Commands.PREPARE_SERVICE_COMMAND and resp.is_message():
@@ -193,11 +198,13 @@ class ServiceClient(IClientHandler):
             self._handler.on_client_state_changed(status)
 
     # private
-    def _set_runtime_fields(self, http_host=None, vods_host=None, cods_host=None, version=None, os=None, vods_in=None):
+    def _set_runtime_fields(self, http_host=None, vods_host=None, cods_host=None, version=None, os=None, exp_time=None,
+                            vods_in=None):
         self._http_host = http_host
         self._vods_host = vods_host
         self._cods_host = cods_host
         self._version = version
+        self._exp_time = exp_time
         self._os = os
         self._vods_in = vods_in
 

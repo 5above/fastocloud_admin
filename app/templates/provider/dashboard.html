@@ -268,6 +268,10 @@ Dashboard | {{ config['PUBLIC_CONFIG'].site.title }}
                         <b>OS:</b>
                         <p id='service_os'>{{ service.os }}</p>
                     </div>
+                    <div class="col-md-2">
+                        <b>Expiration date:</b>
+                        <p id='service_exp_time'>{{ service.exp_time }}</p>
+                    </div>
                 </div>
                 <div class="row">
                     <div class="col-md-2">
@@ -1285,6 +1289,9 @@ Dashboard | {{ config['PUBLIC_CONFIG'].site.title }}
       service_bandwidth_out.text((service.bandwidth_out / (1024 * 1024 / 8)).toFixed(4) + ' Mbps');
       var service_os = $('#service_os');
       service_os.text(service.os);
+      var service_exp_time = $('#service_exp_time');
+      var exp_datetime = new Date(service.exp_time);
+      service_exp_time.text(exp_datetime.toISOString());
       var service_version = $('#service_version');
       service_version.text(service.version);
       var service_status = $('#service_status');

@@ -44,6 +44,7 @@ class ServiceFields:
     BANDWIDTH_IN = 'bandwidth_in'
     BANDWIDTH_OUT = 'bandwidth_out'
     VERSION = 'version'
+    EXP_TIME = 'exp_time'
     UPTIME = 'uptime'
     SYNCTIME = 'synctime'
     TIMESTAMP = 'timestamp'
@@ -203,6 +204,8 @@ class Service(IStreamHandler):
 
     @property
     def synctime(self):
+        if not self._sync_time:
+            return None
         return date_to_utc_msec(self._sync_time)
 
     @property
@@ -212,6 +215,10 @@ class Service(IStreamHandler):
     @property
     def version(self) -> str:
         return self._client.get_version()
+
+    @property
+    def exp_time(self):
+        return self._client.get_exp_time()
 
     @property
     def os(self) -> OperationSystem:
@@ -293,9 +300,10 @@ class Service(IStreamHandler):
                 ServiceFields.MEMORY_FREE: self._memory_free, ServiceFields.HDD_TOTAL: self._hdd_total,
                 ServiceFields.HDD_FREE: self._hdd_free, ServiceFields.BANDWIDTH_IN: self._bandwidth_in,
                 ServiceFields.BANDWIDTH_OUT: self._bandwidth_out, ServiceFields.VERSION: self.version,
-                ServiceFields.UPTIME: self._uptime, ServiceFields.SYNCTIME: self.synctime,
-                ServiceFields.TIMESTAMP: self._timestamp, ServiceFields.STATUS: self.status,
-                ServiceFields.ONLINE_USERS: str(self.online_users), ServiceFields.OS: str(self.os)}
+                ServiceFields.EXP_TIME: self.exp_time, ServiceFields.UPTIME: self._uptime,
+                ServiceFields.SYNCTIME: self.synctime, ServiceFields.TIMESTAMP: self._timestamp,
+                ServiceFields.STATUS: self.status, ServiceFields.ONLINE_USERS: str(self.online_users),
+                ServiceFields.OS: str(self.os)}
 
     def make_serial(self) -> Serial:
         return Serial()
