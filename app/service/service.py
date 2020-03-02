@@ -440,6 +440,9 @@ class Service(IStreamHandler):
                 stream.start_request()
 
     def __convert_stream(self, stream: IStream) -> IStreamObject:
+        if not stream:
+            return
+        
         stream_type = stream.get_type()
         if stream_type == constants.StreamType.PROXY:
             return ProxyStreamObject(stream, self._settings)
